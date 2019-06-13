@@ -1,0 +1,187 @@
+<router-outlet></router-outlet>
+<div class="container">
+  <div class="jumbotron jumbotron-fluid text-center">
+    <div class="container">
+      <h1 class="display-4">{{ title }}</h1>
+      <p class="lead">{{ introline }}</p>
+    </div>
+  </div>
+  <div *ngIf="!modelLoaded" class="row">
+    <div class="progress">
+      <div class="progress-bar progress-bar-striped bg-danger progress-bar-animated" role="progressbar">
+        <b class="progress-text">Loading Model...</b>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="modelLoaded" class="row">
+    <div class="col text-center mb-3">
+      <div class="dropdown">
+        <button class="btn btn-warning dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          {{ modelText }}
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <a class="dropdown-item" *ngFor="let architecture of architectureArray" (click)="selectArchitecture(architecture)">{{ architecture['name'] }}</a>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="modelText !== 'Select Model'" class="col mb-3 selecttxt">
+      Output&nbsp;Stride&nbsp;:
+    </div>
+    <div *ngIf="modelText !== 'Select Model'" class="col text-center mb-3">
+      <div class="selectdiv">
+        <select *ngIf="modelText === 'MobileNet V1'" [value]="outputStride" class="form-control" (change)="selectOutputStride($event.target.value)">
+          <option *ngFor="let outputStride of outputStrideArc1Array">{{ outputStride }}</option>
+        </select>
+        <select *ngIf="modelText === 'ResNet 50'" [value]="outputStride" class="form-control" (change)="selectOutputStride($event.target.value)">
+          <option *ngFor="let outputStride of outputStrideArc2Array">{{ outputStride }}</option>
+        </select>
+      </div>
+    </div>
+    <div *ngIf="modelText !== 'Select Model'" class="col mb-3 selecttxt">
+      Input&nbsp;Resolution&nbsp;:
+    </div>
+    <div *ngIf="modelText !== 'Select Model'" class="col text-center mb-3">
+      <div class="selectdiv">
+        <select *ngIf="modelText === 'MobileNet V1'" [value]="inputResolution" class="form-control" (change)="selectInputResolution($event.target.value)">
+          <option *ngFor="let inputResolution of inputResolutionArc1Array">{{ inputResolution }}</option>
+        </select>
+        <select *ngIf="modelText === 'ResNet 50'" [value]="inputResolution" class="form-control" (change)="selectInputResolution($event.target.value)">
+          <option *ngFor="let inputResolution of inputResolutionArc2Array">{{ inputResolution }}</option>
+        </select>
+      </div>
+    </div>
+    <div *ngIf="modelText === 'MobileNet V1'" class="col mb-3 selecttxt">
+      Multiplier&nbsp;:
+    </div>
+    <div *ngIf="modelText === 'MobileNet V1'" class="col text-center mb-3">
+      <div class="selectdiv">
+        <select [value]="multiplier" class="form-control" (change)="selectMultiplier($event.target.value)">
+          <option *ngFor="let multiplier of multiplierArray">{{ multiplier.toFixed(2) }}</option>
+        </select>
+      </div>
+    </div>
+    <div *ngIf="modelText === 'ResNet 50'" class="col mb-3 selecttxt">
+      Quantization&nbsp;Bytes&nbsp;:
+    </div>
+    <div *ngIf="modelText === 'ResNet 50'" class="col text-center mb-3">
+      <div class="selectdiv">
+        <select [value]="quantBytes" class="form-control" (change)="selectQuantBytes($event.target.value)">
+          <option *ngFor="let quantBytes of quantBytesArray">{{ quantBytes }}</option>
+        </select>
+      </div>
+    </div>
+    <div *ngIf="modelText !== 'Select Model'" class="col text-center mb-3 selecttxt">
+      <button class="btn btn-primary mb-2" (click)="loadModel()">Load&nbsp;Model</button>
+    </div>
+  </div>
+  <div *ngIf="modelLoaded" class="row">
+    <div class="col text-center mb-3">
+      <button type="button" class="btn btn-lg btn-block" [ngClass]="imgBtnStatus ? 'btn-primary' : 'btn-secondary'" (click)="imageMode();">
+        <i class="fa fa-picture-o" aria-hidden="true"></i> &nbsp; Image
+      </button>
+    </div>
+    <div class="col text-center mb-3">
+      <button type="button" class="btn btn-lg btn-block" [ngClass]="webBtnStatus ? 'btn-primary' : 'btn-secondary'" (click)="videoMode()">
+        <i class="fa fa-camera" aria-hidden="true"></i> &nbsp; Webcam
+      </button>
+    </div>
+  </div>
+  <div *ngIf="modelLoaded && webBtnStatus" class="row">
+    <div class="col"></div>
+    <div class="col mb-3 text-center">
+      <button type="button" class="btn btn-success" (click)="videoPic = false; snapPhoto();"><i class="fa fa-camera-retro" aria-hidden="true"></i> Snap Photo </button>
+    </div>
+    <div class="col mb-3 text-center">
+      <button type="button" class="btn btn-danger" (click)="videoCanvasEnable = true; realTimeVideo();"><i class="fa fa-video-camera" aria-hidden="true"></i> Real Time Video </button>
+    </div>
+    <div class="col"></div>
+  </div>
+  <div class="row">
+    <div *ngIf="modelLoaded && imgBtnStatus" class="col mb-3 text-center">
+      <img id="image" class="img-responsive img-border" [src]="imageSrc" alt="No Image" (load)="estimate();" width="{{ imageWidth }}" height="{{ imageHeight }}" crossorigin="anonymous">
+    </div>
+    <div [hidden]="!modelLoaded || !webBtnStatus" class="col mb-3">
+      <video #videoElement class="img-border" width="{{ videoWidth }}" height="{{ videoHeight }}"></video>
+    </div>
+    <div [hidden]="!modelLoaded || videoCanvasEnable" class="col mb-3">
+      <canvas id="canvas" class="img-border" width="{{ canvasWidth }}" height="{{ canvasHeight }}"></canvas>
+    </div>
+    <div *ngIf="videoCanvasEnable" class="col mb-3">
+      <canvas id="videoCanvas" class="img-border" width="{{ canvasWidth }}" height="{{ canvasHeight }}"></canvas>
+    </div>
+    <div [hidden]="!modelLoaded" class="col mb-3">
+      <div class="row">
+        <div class="col mb-3">
+          <button class="btn mb-2" [ngClass]="(pose === 'single-person') ? 'btn-info' : 'btn-secondary'" (click)="changePose('single-person')">Single Pose</button>
+        </div>
+        <div class="col mb-3">
+          <button class="btn mb-2" [ngClass]="(pose === 'multi-person') ? 'btn-info' : 'btn-secondary'" (click)="changePose('multi-person')">Multiple Pose</button>
+        </div>
+      </div>
+      <div class="row">
+        Show Keypoints: &nbsp;
+        <label class="switch">
+          <input type="checkbox" [checked]="drawKeypoints" (change)="onKeypointsChanged()">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="row">
+        Show Skeleton: &nbsp;
+        <label class="switch">
+          <input type="checkbox" [checked]="drawSkeleton" (change)="onSkeletonChanged()">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="row">
+        Show Bounding Box: &nbsp;
+        <label class="switch">
+          <input type="checkbox" [checked]="drawBoundingBox" (change)="onDrawBoundingBoxChanged()">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div class="row">
+        Flip Horizontally: &nbsp;
+        <label class="switch">
+          <input type="checkbox" [checked]="flipHorizontal" (change)="onFlipHorizontalChanged()">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div *ngIf="pose === 'multi-person'" class="row">
+        Maximum Pose Detections : <br />
+        <div class="row icondiv">
+          <div class="col text-left">
+            <i class="fa fa-plus-circle fa-2x" aria-hidden="true" (click)="increaseMaxPoseDetections()"></i>
+          </div>
+          <div class="col text-center maxposetext">{{ maxPoseDetections }}</div>
+          <div class="col text-right">
+            <i class="fa fa-minus-circle fa-2x" aria-hidden="true" (click)="decreaseMaxPoseDetections()"></i>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="pose === 'multi-person'" class="row">
+        Pose Confidence Score Threshold:
+        <ng5-slider [(value)]="scoreThreshold" [options]="scoreThresholdOptions" (userChangeEnd)="onScoreThresholdChanged($event)"></ng5-slider>
+      </div>
+      <div *ngIf="pose === 'multi-person'" class="row">
+        Non-Maximum Suppression (NMS) Radius:
+        <ng5-slider [(value)]="nmsRadius" [options]="nmsRadiusOptions" (userChangeEnd)="onNmsRadiusChanged($event)"></ng5-slider>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="modelLoaded && imgBtnStatus" class="row">
+    <div class="col upload-box">
+      <div class="hold">
+        <span *ngIf="!fileError" class="file-text">{{ fileName }}</span>
+        <span *ngIf="fileError" class="file-text">
+          <i class="alert alert-danger" role="alert">
+            Only images are supported.
+          </i>
+        </span>
+        <span class="btn-file">
+          <i class="fa fa-folder-open" aria-hidden="true"></i> Browse File
+          <input #file type="file" (change)="browseFile(file.files)">
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
